@@ -1,12 +1,28 @@
 import { useState, useEffect, useRef } from "react";
 import ConfirmationModal from "../components/Todolist/ModalBox/ConfirmationModal";
+import AddTaskModal from "../components/Todolist/ModalBox/addTaskBox";
+import EditTaskModal from "../components/Todolist/ModalBox/editTaskDialog";
+import Header from "../components/Header";
+import BtnInsideTask from "../components/ButtonInsideTask";
 
 const TodoListApp = () => {
-  const [todoList, setTodoList] = useState([]);
+  const [todoList, setTodoList] = useState(() => {
+    const storedTodoList = localStorage.getItem("todoList");
+    return storedTodoList ? JSON.parse(storedTodoList) : [];
+  });
   const [newTask, setNewTask] = useState("");
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [showAddTaskModal, setShowAddTaskModal] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState(null);
   const [inputValue, setInputValue] = useState("");
+  const [enterButtonClicked, setEnterButtonClicked] = useState(false);
+  // edit task state
+  const [showEditTaskModal, setShowEditTaskModal] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [updatedText, setUpdatedText] = useState("");
+  const [editingTaskId, setEditingTaskId] = useState(null);
+
+  const MAX_TASK_LENGTH = 10;
 
   const handleChange = (e) => {
     setNewTask(e.target.value);
@@ -14,8 +30,6 @@ const TodoListApp = () => {
   };
 
   const addTask = () => {
-    const MAX_TASK_LENGTH = 50;
-
     if (newTask.trim() === "") {
       alert("Please enter a task.");
       return;
@@ -29,6 +43,8 @@ const TodoListApp = () => {
     const existingTask = todoList.find((task) => task.taskName === newTask);
 
     if (existingTask) {
+      alert("this task was added");
+      // alert("Please enter a task.");
       return;
     }
 
@@ -43,29 +59,43 @@ const TodoListApp = () => {
     localStorage.setItem("todoList", JSON.stringify(updatedToDoList));
 
     setInputValue("");
+    console.log("add task clicked");
+    setShowAddTaskModal(false);
+
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve();
+      }, 10); // Simulating a 1-second asynchronous task
+    });
   };
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = async (e) => {
     if (e.key === "Enter") {
-      addTask();
-      e.target.value = "";
+      if (newTask.trim() === "") {
+        alert("Please enter a task.");
+        return;
+      }
+      await addTask();
+      setEnterButtonClicked(true);
+      setShowAddTaskModal(false);
     }
-    // setNewTask((e.target.value = "" ? "" : e.target.value) + "\n");
   };
 
   useEffect(() => {
     const storedTodoList = localStorage.getItem("todoList");
 
     if (storedTodoList) {
-      setTodoList(JSON.parse(storedTodoList));
+      try {
+        const parsedTodoList = JSON.parse(storedTodoList);
+        setTodoList(parsedTodoList);
+      } catch (error) {
+        // Handle the error, such as showing a message or resetting the todoList state
+        console.error("Error parsing stored todoList:", error);
+        // Reset the todoList state to a default value, if needed
+        setTodoList([]);
+      }
     }
   }, []);
-
-  //   const removeTask = (index) => {
-  //     const newTodoList = [...todoList];
-  //     newTodoList.splice(index, 1);
-  //     setTodoList(newTodoList);
-  //   };
 
   const handleDeleteWithConfirmation = (id) => {
     setTaskToDelete(id);
@@ -93,91 +123,82 @@ const TodoListApp = () => {
     setShowConfirmationModal(false);
   };
 
+  // const handleCheckList = (id) => {
+  //   setTodoList((prevList) => prevList.map((task) => (task.id === id ? { ...task, checked: !task.checked } : task)));
+  // };
+
   const handleCheckList = (id) => {
     setTodoList((prevList) => prevList.map((task) => (task.id === id ? { ...task, checked: !task.checked } : task)));
   };
 
+  const taskIds = todoList.map((task) => task.id);
+  const totalTask = taskIds.length;
+
+  // modal box add task
+
+  const handleConfirmationAddTaskModal = () => {
+    setShowAddTaskModal(true);
+  };
+
+  const handleCancelAddTask = () => {
+    setShowAddTaskModal(false);
+  };
+
+  const handleConfirmAddTask = () => {
+    addTask();
+    // console.log("clicked");
+    console.log(inputValue);
+    setShowAddTaskModal(false);
+  };
+
+  // Edit task
+
+  const task = todoList.find((task) => task.id === selectedTask);
+  const handleEditTaskClick = (task) => {
+    setEditingTaskId(task.id);
+    setSelectedTask(task);
+    setUpdatedText(task.taskName);
+    setShowEditTaskModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowEditTaskModal(false);
+    setSelectedTask(null);
+    setUpdatedText("");
+  };
+
+  const handleInputChange = (e) => {
+    setUpdatedText(e.target.value);
+  };
+
+  const handleSaveTask = () => {
+    const updatedTodoList = todoList.map((task) => (task.id === selectedTask.id ? { ...task, taskName: updatedText } : task));
+    setTodoList(updatedTodoList);
+    setEditingTaskId(null);
+    setShowEditTaskModal(false);
+    console.log("updated");
+
+    setUpdatedText("");
+  };
+
+  // Save the updated todoList to local storage whenever it changes
+  useEffect(() => {
+    localStorage.setItem("todoList", JSON.stringify(todoList));
+  }, [todoList]);
+
   return (
     <>
-      <div className="flex flex-col justify-center items-center bg-gradient-to-r from-sky-400 to-cyan-300 min-h-screen ">
-        <div className="App   h-96  w-[22rem]   rounded-xl  pb-2">
-          <div>
-            <h1 className="text-4xl ml-2 text-white">Just do it!</h1>
-          </div>
-          <div className="addTask flex gap-4 justify-between p-2 bg-white rounded-xl shadow-md">
-            <input className="border p-2 border-blue-800 rounded-lg ml-3" placeholder="Add Task" value={inputValue} onChange={handleChange} onKeyDown={handleKeyDown} type="text" />
-            <button className="bg-blue-600 text-white text-sm px-2 rounded-xl font-bold " onClick={addTask}>
-              Add Task
-            </button>
-          </div>
-          <div className=" mt-3 rounded-xl bg-white  py-3 shadow-2xl">
+      <div className="flex flex-col justify-center items-center bg-slate-300 min-h-screen ">
+        <div className="App     w-[22rem]   rounded-xl  bg-white">
+          <Header totalTask={totalTask} handleConfirmation={handleConfirmationAddTaskModal}></Header>
+          <div className="  rounded-xl bg-white  py-3 shadow-2xl">
             <div className="overflow-auto scroll  w-full ">
-              <div className="list max-h-full h-80  px-3">
+              <div className="list max-h-full h-96  px-3">
                 {todoList.map((task) => (
                   <div key={task.id} className="  flex justify-between gap-2 items-center mt-1 ">
-                    <div className={` w-56  rounded-lg ${task.checked ? "bg-green-200" : ""}`}>
+                    <div className={` w-full h-28 px-3 py-2 rounded-3xl flex justify-between items-start ${task.checked ? "bg-green-200" : "bg-slate-200"}`}>
                       <p className={` mx-2 my-1 }`}>{task.taskName}</p>
-                      <hr />
-                    </div>
-
-                    {/* <button onClick={() => removeTask(todoList.indexOf(task))} className="mr-5 px-1 border border-slate-500 rounded-md">
-                X
-              </button> */}
-                    <div className="flex gap-3 ">
-                      <button onClick={() => handleDeleteWithConfirmation(task.id)} className=" px-1 border border-slate-500 rounded-md">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="icon icon-tabler icon-tabler-x"
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          strokeWidth="2"
-                          stroke="currentColor"
-                          fill="none"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                          <path d="M18 6l-12 12"></path>
-                          <path d="M6 6l12 12"></path>
-                        </svg>
-                      </button>
-                      <button className=" px-1 border border-slate-500 rounded-md">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="icon icon-tabler icon-tabler-edit"
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          strokeWidth="2"
-                          stroke="currentColor"
-                          fill="none"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                          <path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1"></path>
-                          <path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z"></path>
-                          <path d="M16 5l3 3"></path>
-                        </svg>
-                      </button>
-                      <button onClick={() => handleCheckList(task.id)} className=" px-1 border border-slate-500 rounded-md">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="icon icon-tabler icon-tabler-check"
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          strokeWidth="2"
-                          stroke="currentColor"
-                          fill="none"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                          <path d="M5 12l5 5l10 -10"></path>
-                        </svg>
-                      </button>
+                      <BtnInsideTask key={task.id} task={task} handleDelete={handleDeleteWithConfirmation} handleCheckList={handleCheckList} handleEditTask={handleEditTaskClick} />
                     </div>
                   </div>
                 ))}
@@ -186,7 +207,29 @@ const TodoListApp = () => {
           </div>
         </div>
       </div>
-      {showConfirmationModal && <ConfirmationModal onCancel={handleCancelDelete} onConfirm={handleConfirmDelete} isOpen={showConfirmationModal} />}
+
+      <div className="modalBox">
+        {/* add task modal */}
+        <div>
+          {showAddTaskModal && (
+            <AddTaskModal title={"Add Task"} btnTitle="Add Task" onCancel={handleCancelAddTask} onKeyDown={handleKeyDown} onClick={handleConfirmAddTask} isOpen={showAddTaskModal}>
+              <input className="text-slate-800 border p-2 border-blue-800 rounded-lg ml-3" placeholder="Add Task" onChange={handleChange} onKeyDown={handleKeyDown} type="text" />
+            </AddTaskModal>
+          )}
+        </div>
+        {/* edit task modal */}
+
+        <div>
+          {showEditTaskModal && selectedTask && (
+            <AddTaskModal title={"Update Task"} btnTitle="Update Task" onClick={handleSaveTask} onCancel={handleCloseModal} isOpen={true} onSave={handleSaveTask}>
+              <input className="text-slate-800 border p-2 border-blue-800 rounded-lg ml-3" placeholder="Add Task" type="text" key={task.id} value={updatedText} onChange={handleInputChange} />
+            </AddTaskModal>
+          )}
+        </div>
+
+        {/* delete task modal */}
+        <div>{showConfirmationModal && <ConfirmationModal onCancel={handleCancelDelete} onConfirm={handleConfirmDelete} isOpen={showConfirmationModal} />}</div>
+      </div>
     </>
   );
 };
