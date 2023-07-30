@@ -41,7 +41,7 @@ const TodoListApp = () => {
       return;
     }
 
-    const existingTask = todoList.find((task) => task.taskName === task.taskName);
+    const existingTask = todoList.find((task) => task.taskName === newTask);
 
     if (existingTask) {
       alert("this task was added");
@@ -141,6 +141,8 @@ const TodoListApp = () => {
   // modal box add task
 
   const handleConfirmationAddTaskModal = () => {
+    event.preventDefault();
+
     setShowAddTaskModal(true);
   };
 
@@ -169,16 +171,16 @@ const TodoListApp = () => {
     setUpdatedText(e.target.value);
   };
 
-  const handleUpdateTask = (updatedTask) => {
-    const taskIndex = todoList.findIndex((task) => task.id === updatedTask.id);
-    if (taskIndex === -1) {
-      console.log("task not found");
-      return;
-    }
-    const updatedList = [...todoList.slice(0, taskIndex), updatedTask, ...todoList.slice(taskIndex + 1)];
-    setTodoList(updatedList);
-    localStorage.setItem("todoList", JSON.stringify(updatedList));
-  };
+  // const handleUpdateTask = (updatedTask) => {
+  //   const taskIndex = todoList.findIndex((task) => task.id === updatedTask.id);
+  //   if (taskIndex === -1) {
+  //     console.log("task not found");
+  //     return;
+  //   }
+  //   const updatedList = [...todoList.slice(0, taskIndex), updatedTask, ...todoList.slice(taskIndex + 1)];
+  //   setTodoList(updatedList);
+  //   localStorage.setItem("todoList", JSON.stringify(updatedList));
+  // };
 
   const handleEditTaskClick = (task) => {
     setShowEditTaskModal(true);
@@ -189,6 +191,13 @@ const TodoListApp = () => {
   };
 
   const handleSaveTask = () => {
+    const existingTask = todoList.find((task) => task.taskName === updatedText && task.id !== selectedTask.id);
+
+    if (existingTask) {
+      alert("A task with this name already exists. Please choose a different name.");
+      return;
+    }
+
     const updatedTodoList = todoList.map((task) => (task.id === selectedTask.id ? { ...task, taskName: updatedText } : task));
     setTodoList(updatedTodoList);
     setShowEditTaskModal(false);
@@ -204,7 +213,9 @@ const TodoListApp = () => {
     <>
       <div className="flex flex-col justify-center items-center bg-slate-300 min-h-screen ">
         <div className="App     w-[22rem]   rounded-xl  bg-white">
-          <Header totalTask={totalTask} handleConfirmation={handleConfirmationAddTaskModal}></Header>
+          <div className="mt-3">
+            <Header totalTask={totalTask} handleConfirmation={handleConfirmationAddTaskModal}></Header>
+          </div>
           <div className="  rounded-xl bg-white  py-3 shadow-2xl">
             <div className="overflow-auto scroll  w-full ">
               <div className="list max-h-full h-96  px-3">
