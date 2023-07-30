@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import ConfirmationModal from "../components/Todolist/ModalBox/ConfirmationModal";
-import AddTaskModal from "../components/Todolist/ModalBox/addTaskBox";
+import TaskModal from "../components/Todolist/ModalBox/TaskDialog";
 import EditTaskModal from "../components/Todolist/ModalBox/editTaskDialog";
 import Header from "../components/Header";
 import BtnInsideTask from "../components/ButtonInsideTask";
@@ -15,6 +15,7 @@ const TodoListApp = () => {
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState(null);
   const [inputValue, setInputValue] = useState("");
+  const [totalTask, setTotalTask] = useState(0);
   const [enterButtonClicked, setEnterButtonClicked] = useState(false);
   // edit task state
   const [showEditTaskModal, setShowEditTaskModal] = useState(false);
@@ -22,7 +23,7 @@ const TodoListApp = () => {
   const [updatedText, setUpdatedText] = useState("");
   const [editingTaskId, setEditingTaskId] = useState(null);
 
-  const MAX_TASK_LENGTH = 10;
+  const MAX_TASK_LENGTH = 30;
 
   const handleChange = (e) => {
     setNewTask(e.target.value);
@@ -30,7 +31,7 @@ const TodoListApp = () => {
   };
 
   const addTask = () => {
-    if (newTask.trim() === "") {
+    if (newTask === "") {
       alert("Please enter a task.");
       return;
     }
@@ -40,7 +41,7 @@ const TodoListApp = () => {
       return;
     }
 
-    const existingTask = todoList.find((task) => task.taskName === newTask);
+    const existingTask = todoList.find((task) => task.taskName === task.taskName);
 
     if (existingTask) {
       alert("this task was added");
@@ -129,10 +130,13 @@ const TodoListApp = () => {
 
   const handleCheckList = (id) => {
     setTodoList((prevList) => prevList.map((task) => (task.id === id ? { ...task, checked: !task.checked } : task)));
+    console.log(id);
   };
 
-  const taskIds = todoList.map((task) => task.id);
-  const totalTask = taskIds.length;
+  useEffect(() => {
+    const taskIds = todoList.map((task) => task.id);
+    setTotalTask(taskIds.length);
+  }, [todoList]);
 
   // modal box add task
 
@@ -154,12 +158,6 @@ const TodoListApp = () => {
   // Edit task
 
   const task = todoList.find((task) => task.id === selectedTask);
-  const handleEditTaskClick = (task) => {
-    setEditingTaskId(task.id);
-    setSelectedTask(task);
-    setUpdatedText(task.taskName);
-    setShowEditTaskModal(true);
-  };
 
   const handleCloseModal = () => {
     setShowEditTaskModal(false);
@@ -171,14 +169,30 @@ const TodoListApp = () => {
     setUpdatedText(e.target.value);
   };
 
+  const handleUpdateTask = (updatedTask) => {
+    const taskIndex = todoList.findIndex((task) => task.id === updatedTask.id);
+    if (taskIndex === -1) {
+      console.log("task not found");
+      return;
+    }
+    const updatedList = [...todoList.slice(0, taskIndex), updatedTask, ...todoList.slice(taskIndex + 1)];
+    setTodoList(updatedList);
+    localStorage.setItem("todoList", JSON.stringify(updatedList));
+  };
+
+  const handleEditTaskClick = (task) => {
+    setShowEditTaskModal(true);
+    setEditingTaskId(task.id);
+    setSelectedTask(task);
+    setUpdatedText(task.taskName);
+    console.log(task.taskName);
+  };
+
   const handleSaveTask = () => {
     const updatedTodoList = todoList.map((task) => (task.id === selectedTask.id ? { ...task, taskName: updatedText } : task));
     setTodoList(updatedTodoList);
-    setEditingTaskId(null);
     setShowEditTaskModal(false);
     console.log("updated");
-
-    setUpdatedText("");
   };
 
   // Save the updated todoList to local storage whenever it changes
@@ -198,7 +212,7 @@ const TodoListApp = () => {
                   <div key={task.id} className="  flex justify-between gap-2 items-center mt-1 ">
                     <div className={` w-full h-28 px-3 py-2 rounded-3xl flex justify-between items-start ${task.checked ? "bg-green-200" : "bg-slate-200"}`}>
                       <p className={` mx-2 my-1 }`}>{task.taskName}</p>
-                      <BtnInsideTask key={task.id} task={task} handleDelete={handleDeleteWithConfirmation} handleCheckList={handleCheckList} handleEditTask={handleEditTaskClick} />
+                      <BtnInsideTask key={task.id} task={task} handleDelete={handleDeleteWithConfirmation} handleCheckList={handleCheckList} handleEditTask={() => handleEditTaskClick(task)} />
                     </div>
                   </div>
                 ))}
@@ -212,18 +226,18 @@ const TodoListApp = () => {
         {/* add task modal */}
         <div>
           {showAddTaskModal && (
-            <AddTaskModal title={"Add Task"} btnTitle="Add Task" onCancel={handleCancelAddTask} onKeyDown={handleKeyDown} onClick={handleConfirmAddTask} isOpen={showAddTaskModal}>
+            <TaskModal title={"Add Task"} btnTitle="Add Task" onCancel={handleCancelAddTask} onKeyDown={handleKeyDown} onClick={handleConfirmAddTask} isOpen={showAddTaskModal}>
               <input className="text-slate-800 border p-2 border-blue-800 rounded-lg ml-3" placeholder="Add Task" onChange={handleChange} onKeyDown={handleKeyDown} type="text" />
-            </AddTaskModal>
+            </TaskModal>
           )}
         </div>
         {/* edit task modal */}
 
         <div>
           {showEditTaskModal && selectedTask && (
-            <AddTaskModal title={"Update Task"} btnTitle="Update Task" onClick={handleSaveTask} onCancel={handleCloseModal} isOpen={true} onSave={handleSaveTask}>
-              <input className="text-slate-800 border p-2 border-blue-800 rounded-lg ml-3" placeholder="Add Task" type="text" key={task.id} value={updatedText} onChange={handleInputChange} />
-            </AddTaskModal>
+            <TaskModal task={selectedTask.id} title={"Update Task"} btnTitle="Update Task" onClick={handleSaveTask} onCancel={handleCloseModal} isOpen={showEditTaskModal}>
+              <input className="text-slate-800 border p-2 border-blue-800 rounded-lg ml-3" placeholder="Add Task" type="text" key={selectedTask.id} value={updatedText} onChange={handleInputChange} />
+            </TaskModal>
           )}
         </div>
 
