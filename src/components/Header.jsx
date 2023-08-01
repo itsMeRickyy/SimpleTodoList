@@ -2,50 +2,58 @@ import React, { useState, useEffect, useRef } from "react";
 
 const Header = ({ totalTask, handleConfirmation }) => {
   const [editing, setEditing] = useState(false);
-  // const [updatedText, setUpdatedText] = useState("Groceries");
   const [headerData, setHeaderData] = useState({
-    title: "Groceries",
+    title: "",
     description: "Add your groceries here",
   });
   const titleInputRef = useRef(null);
+  const [loading, setLoading] = useState(true);
+  const MAX_TITLE_LENGTH = 20;
+  const [prevTitle, setPrevTitle] = useState("");
+  const [error, setError] = useState("");
   // const descriptionInputRef = useRef(null);
 
   useEffect(() => {
+    // Load the header text from localStorage on component mount
     const storedHeaderData = localStorage.getItem("headerData");
     if (storedHeaderData) {
-      setHeaderData(JSON.parse(storedHeaderData));
+      const setParsedHeaderData = JSON.parse(storedHeaderData);
+      setHeaderData((prevHeaderData) => ({
+        ...prevHeaderData,
+        ...setParsedHeaderData,
+      }));
     }
+    setLoading(false); // Mark loading as false once the data is loaded
   }, []);
 
-  // useEffect(() => {
-  //   const handleClickOutside = (event) => {
-  //     if (editing && !titleInputRef.current.contains(event.target) && !descriptionInputRef.current.contains(event.target)) {
-  //       handleSave();
-  //       setEditing(false);
-  //     }
-  //   };
+  const saveTheTitle = () => {
+    const numWords = headerData.title.length;
 
-  //   document.addEventListener("click", handleClickOutside);
-  //   return () => {
-  //     document.removeEventListener("click", handleClickOutside);
-  //   };
-  // }, [editing]);
-
-  const handleSave = () => {
-    if (headerData.title.trim() === "") {
-      alert("Header title cannot be empty.");
-
-      const storedHeaderText = localStorage.getItem("headerText");
-      setHeaderData(storedHeaderText || "Default Header title");
+    if (numWords > MAX_TITLE_LENGTH) {
+      // alert(`Title must be less than ${MAX_TITLE_LENGTH} words.`);
+      setHeaderData((prevHeaderData) => ({
+        ...prevHeaderData,
+        title: prevTitle, // Revert back to the previous title
+      }));
       return;
     }
-    // Save the updated header text to localStorage
+
     localStorage.setItem("headerData", JSON.stringify(headerData));
-    console.log(headerData);
+    setError("");
     console.log("updated");
   };
 
+  const handleSave = () => {
+    saveTheTitle();
+  };
+
   const handleInputChange = (event) => {
+    if (headerData.title.length > MAX_TITLE_LENGTH) {
+      setError(`Title must be less than ${MAX_TITLE_LENGTH} words.`);
+    } else {
+      setError("");
+    }
+
     setHeaderData({
       ...headerData,
       [event.target.name]: event.target.value,
@@ -67,26 +75,43 @@ const Header = ({ totalTask, handleConfirmation }) => {
     }, 0);
   };
 
+  const isDisabled = headerData.title.length > MAX_TITLE_LENGTH;
+
   return (
     <>
       <div>
         <div className="my-3">
           {editing ? (
-            <section className=" flex  ">
-              {/* title input */}
-              <input ref={(element) => (titleInputRef.current = element)} className="text-2xl ml-5 rounded-lg outline-none" type="text" name="title" value={headerData.title} onChange={handleInputChange} onBlur={handleInputBlur} />
-              {/* description input */}
-              {/* <input ref={descriptionInputRef} className="text-2xl ml-5 hidden" name="description" type="text" value={headerData.description} onChange={handleInputChange} onBlur={handleInputBlur} /> */}
-              <button type="button" onClick={handleSave} className="bg-blue-600 w-8 h-8 rounded-full text-white">
-                ✓
-              </button>
+            <section>
+              <div className=" flex  ">
+                {/* title input */}
+                <input
+                  ref={(element) => (titleInputRef.current = element)}
+                  className="text-2xl ml-5 rounded-lg outline-none"
+                  type="text"
+                  name="title"
+                  value={headerData.title}
+                  onChange={handleInputChange}
+                  onBlur={handleInputBlur}
+                  onFocus={() => setPrevTitle(headerData.title)}
+                />
+                {/* description input */}
+                {/* <input ref={descriptionInputRef} className="text-2xl ml-5 hidden" name="description" type="text" value={headerData.description} onChange={handleInputChange} onBlur={handleInputBlur} /> */}
+                <button type="button" onClick={handleSave} disabled={isDisabled} className="bg-blue-600 w-8 h-8 rounded-full text-white">
+                  ✓
+                </button>
+              </div>
+              {error && <p className="text-red-500 text-xs ml-5">{error}</p>}
             </section>
           ) : (
             <div>
-              <h1 className="text-2xl ml-5 " onClick={handleEditClick}>
-                {headerData.title}
-              </h1>
-              <p className="hidden">{headerData.description}</p>
+              {loading ? (
+                <h1>Loading...</h1>
+              ) : (
+                <h1 className="text-2xl ml-5 " onClick={handleEditClick}>
+                  {headerData.title || "Click to add header title"}
+                </h1>
+              )}
             </div>
           )}
         </div>

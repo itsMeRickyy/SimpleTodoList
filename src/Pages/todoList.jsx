@@ -153,7 +153,7 @@ const TodoListApp = () => {
   const handleConfirmAddTask = () => {
     addTask();
     // console.log("clicked");
-    console.log(inputValue);
+    // console.log(inputValue);
     setShowAddTaskModal(false);
   };
 
@@ -211,7 +211,7 @@ const TodoListApp = () => {
 
   return (
     <>
-      <div className="flex flex-col justify-center items-center bg-slate-300 min-h-screen ">
+      <div className="flex flex-col justify-center items-center bg-slate-700 min-h-screen ">
         <div className="App     w-[22rem]   rounded-xl  bg-white">
           <div className="mt-3">
             <Header totalTask={totalTask} handleConfirmation={handleConfirmationAddTaskModal}></Header>
@@ -221,7 +221,7 @@ const TodoListApp = () => {
               <div className="list max-h-full h-96  px-3">
                 {todoList.map((task) => (
                   <div key={task.id} className="  flex justify-between gap-2 items-center mt-1 ">
-                    <div className={` w-full h-28 px-3 py-2 rounded-3xl flex justify-between items-start ${task.checked ? "bg-green-200" : "bg-slate-200"}`}>
+                    <div className={` w-full h-28 px-3 py-2 rounded-3xl flex justify-between items-start ${task.checked ? "bg-green-200" : "bg-slate-300"}`}>
                       <p className={` mx-2 my-1 }`}>{task.taskName}</p>
                       <BtnInsideTask key={task.id} task={task} handleDelete={handleDeleteWithConfirmation} handleCheckList={handleCheckList} handleEditTask={() => handleEditTaskClick(task)} />
                     </div>
