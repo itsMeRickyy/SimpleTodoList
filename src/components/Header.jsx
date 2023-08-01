@@ -109,7 +109,7 @@ const Header = ({ totalTask, handleConfirmation }) => {
                 <h1>Loading...</h1>
               ) : (
                 <h1 className="text-2xl ml-5 " onClick={handleEditClick}>
-                  {headerData.title || "Click to add header title"}
+                  {headerData.title || "Click to add title"}
                 </h1>
               )}
             </div>
